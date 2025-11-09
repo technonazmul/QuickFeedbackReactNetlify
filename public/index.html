@@ -14,7 +14,8 @@
         background-color: #f4f7f6;
         color: #333;
         margin: 0;
-        padding: 40px 20px;
+        /* Add padding-bottom to make space for the footer */
+        padding: 40px 20px 100px 20px;
         display: grid;
         place-items: center;
         min-height: 100vh;
@@ -153,6 +154,65 @@
         margin: 20px auto;
       }
 
+      /* --- 
+        NEW CTA & WHATSAPP STYLES 
+      --- */
+
+      .cta-card {
+        padding: 24px;
+        text-align: center;
+        background: #fdfdfd; /* Slightly different from the white card */
+      }
+      .cta-card p {
+        font-size: 1.1rem;
+        color: #333;
+        margin-bottom: 20px;
+      }
+      .whatsapp-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        padding: 14px;
+        font-size: 1rem;
+        font-weight: 700;
+        color: #fff;
+        background-color: #25d366; /* WhatsApp Green */
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background-color 0.2s, transform 0.2s;
+      }
+      .whatsapp-btn:hover {
+        background-color: #128c7e;
+        transform: scale(1.02);
+      }
+
+      .whatsapp-fab {
+        position: fixed;
+        bottom: 25px;
+        right: 25px;
+        width: 60px;
+        height: 60px;
+        background-color: #25d366;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        animation: fadeIn 0.5s ease-out;
+        transition: transform 0.2s;
+      }
+      .whatsapp-fab:hover {
+        transform: scale(1.1);
+      }
+      .whatsapp-fab svg {
+        width: 32px;
+        height: 32px;
+        fill: #fff;
+      }
+
       /* --- Animations --- */
       @keyframes spin {
         0% {
@@ -165,7 +225,7 @@
       @keyframes fadeIn {
         from {
           opacity: 0;
-          transform: translateY(-10px);
+          transform: translateY(10px);
         }
         to {
           opacity: 1;
@@ -180,6 +240,27 @@
     <script type="text/babel">
       const { useState, useEffect } = React;
 
+      // --- NEW WHATSAPP ICON COMPONENT ---
+      const WhatsAppIcon = ({
+        width = 24,
+        height = 24,
+        fill = "currentColor",
+        style = {},
+      }) => {
+        return (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width={width}
+            height={height}
+            viewBox="0 0 24 24"
+            fill={fill}
+            style={style}
+          >
+            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 4.315 1.847 6.062l-1.011 3.697 3.805-1.004z" />
+          </svg>
+        );
+      };
+
       function App() {
         // Form state
         const [name, setName] = useState("");
@@ -192,6 +273,8 @@
 
         // Data state
         const [feedbacks, setFeedbacks] = useState([]);
+
+        const WHATSAPP_LINK = "https://wa.me/8801795365429";
 
         // --- Data Fetching ---
 
@@ -347,26 +430,51 @@
               </form>
             </div>
 
-            {/* --- PANEL 2: LIVE FEED CARD --- */}
+            {/* --- 
+              NEW PANEL 2: CALL TO ACTION CARD 
+            --- */}
+            <div className="card cta-card">
+              <h2>Like this demo?</h2>
+              <p>
+                I built this to show how modern, full-stack apps work.
+                <br />
+                Let's build *your* project next.
+              </p>
+              <a
+                href={WHATSAPP_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="whatsapp-btn"
+              >
+                <WhatsAppIcon style={{ marginRight: "10px" }} />
+                Message me on WhatsApp
+              </a>
+            </div>
+
+            {/* --- PANEL 3: LIVE FEED CARD --- */}
             <div className="card">
               <h2>Live Feedback Feed</h2>
               <FeedbackList />
             </div>
+
+            {/* --- 
+              NEW FLOATING ACTION BUTTON (FAB) 
+            --- */}
+            <a
+              href={WHATSAPP_LINK}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="whatsapp-fab"
+              aria-label="Message me on WhatsApp"
+            >
+              <WhatsAppIcon width={32} height={32} fill="#fff" />
+            </a>
 
             {/* --- FOOTER --- */}
             <footer className="text-center" style={{ color: "#888" }}>
               <p>
                 Built with React, Netlify Functions & MongoDB.
                 <br />A demo by <strong>Nazmul Khalid</strong>
-                <br />
-                <a
-                  href="https://wa.me/8801795365429"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: "#25D366", textDecoration: "none" }}
-                >
-                  💬 Message me on WhatsApp
-                </a>
               </p>
             </footer>
           </div>
