@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-R" />
     <title>React Feedback Form</title>
-    <!-- React and ReactDOM CDN -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
@@ -25,25 +24,32 @@
             return;
           }
 
-          const payload = { name, message };
+          // 1. Use the correct, relative path (starts with /.)
+          const url = "/.netlify/functions/feedback";
 
           try {
-            const res = await fetch("/.netlify/functions/feedback", {
+            // 2. Use 'POST' to send data, not 'GET'
+            const res = await fetch(url, {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload),
+              headers: {
+                "Content-Type": "application/json",
+              },
+              // 3. Send data as a JSON string in the body
+              body: JSON.stringify({ name, message }),
             });
 
+            const data = await res.json();
+
             if (res.ok) {
-              setStatus("Feedback sent! Thank you.");
+              setStatus(data.message || "Feedback sent! Thank you.");
               setName("");
               setMessage("");
             } else {
-              setStatus("Error sending feedback.");
+              setStatus(data.error || "Error sending feedback.");
             }
           } catch (err) {
-            setStatus("Error sending feedback.");
             console.error(err);
+            setStatus("Error sending feedback.");
           }
         };
 
