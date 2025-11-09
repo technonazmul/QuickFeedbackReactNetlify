@@ -1,18 +1,21 @@
 import { MongoClient } from "mongodb";
 
+// Get your secret connection string from environment variables
 const uri =
   process.env.MONGODB_URI ||
   "mongodb+srv://technonazmul:K2SGsegubXQkoPBF@cluster0.9opgunk.mongodb.net/smart-tasks?retryWrites=true&w=majority&appName=Cluster0";
 const client = new MongoClient(uri);
 
 export async function handler(event) {
-  if (event.httpMethod !== "POST") {
+  // Only allow GET
+  if (event.httpMethod !== "GET") {
     return {
       statusCode: 405,
       body: JSON.stringify({ error: "Method Not Allowed" }),
     };
   }
 
+  // Safety check
   if (!uri) {
     return {
       statusCode: 500,
@@ -23,32 +26,19 @@ export async function handler(event) {
   }
 
   try {
-    const { name, message } = JSON.parse(event.body);
-
-    if (!name || !message) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Name and message are required." }),
-      };
-    }
-
     await client.connect();
     const db = client.db("feedbackDB");
+    const collection = db.collection("feedback");
 
-    // ** THIS IS THE ONLY CHANGE **
-    // We now add a 'createdAt' field with the current timestamp
-    const newFeedback = {
-      name,
-      message,
-      createdAt: new Date(),
-    };
-
-    await db.collection("feedback").insertOne(newFeedback);
+    // Find all feedback, sort by 'createdAt' in descending order (newest first)
+    const feedbacks = await collection
+      .find({})
+      .sort({ createdAt: -1 })
+      .toArray();
 
     return {
       statusCode: 200,
-      // We can also return the new item, which is good practice
-      body: JSON.stringify({ message: "Feedback saved!", newFeedback }),
+      body: JSON.stringify(feedbacks),
     };
   } catch (err) {
     console.error(err);

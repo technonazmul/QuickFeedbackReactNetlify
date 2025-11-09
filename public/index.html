@@ -1,75 +1,365 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-R" />
-    <title>React Feedback Form</title>
+    <meta charset="UTF-8" />
+    <title>Live Feedback Demo</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <style>
+      /* --- Global Styles --- */
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+        background-color: #f4f7f6;
+        color: #333;
+        margin: 0;
+        padding: 40px 20px;
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+      }
+      * {
+        box-sizing: border-box;
+      }
+
+      /* --- App Container --- */
+      .showcase-container {
+        display: grid;
+        gap: 24px;
+        width: 100%;
+        max-width: 550px;
+      }
+
+      /* --- Card Styles --- */
+      .card {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        padding: 24px;
+        border: 1px solid #e6e6e6;
+      }
+      .card h2 {
+        margin-top: 0;
+        margin-bottom: 20px;
+        color: #111;
+        font-size: 1.5rem;
+      }
+
+      /* --- Form Styles --- */
+      .form-group {
+        margin-bottom: 16px;
+      }
+      .form-group label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 6px;
+        font-size: 0.9rem;
+      }
+      .form-group input,
+      .form-group textarea {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-family: inherit;
+        transition: border-color 0.2s, box-shadow 0.2s;
+      }
+      .form-group input:focus,
+      .form-group textarea:focus {
+        outline: none;
+        border-color: #007aff;
+        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+      }
+      .form-group textarea {
+        min-height: 100px;
+        resize: vertical;
+      }
+      .submit-btn {
+        width: 100%;
+        padding: 14px;
+        font-size: 1rem;
+        font-weight: 700;
+        color: #fff;
+        background-color: #007aff;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      .submit-btn:hover {
+        background-color: #005ecb;
+      }
+      .submit-btn:disabled {
+        background-color: #a0a0a0;
+        cursor: not-allowed;
+      }
+
+      /* --- Status Messages --- */
+      .status-message {
+        text-align: center;
+        margin-top: 16px;
+        font-weight: 600;
+      }
+      .status-error {
+        color: #d93025;
+      }
+      .status-success {
+        color: #1e8e3e;
+      }
+
+      /* --- Feedback List Styles --- */
+      .feedback-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .feedback-item {
+        border-bottom: 1px solid #eee;
+        padding: 16px 4px;
+        animation: fadeIn 0.5s ease-out;
+      }
+      .feedback-item:last-child {
+        border-bottom: none;
+      }
+      .feedback-item strong {
+        display: block;
+        font-size: 1.1rem;
+        color: #000;
+        margin-bottom: 4px;
+      }
+      .feedback-item p {
+        margin: 0;
+        color: #555;
+      }
+      .feedback-item-meta {
+        font-size: 0.8rem;
+        color: #888;
+        margin-top: 8px;
+      }
+
+      /* --- Utility Styles --- */
+      .text-center {
+        text-align: center;
+      }
+      .loading-spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #007aff;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin: 20px auto;
+      }
+
+      /* --- Animations --- */
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
 
     <script type="text/babel">
-      const { useState } = React;
+      const { useState, useEffect } = React;
 
       function App() {
+        // Form state
         const [name, setName] = useState("");
         const [message, setMessage] = useState("");
-        const [status, setStatus] = useState("");
 
-        const submitFeedback = async () => {
+        // Status state
+        const [status, setStatus] = useState("");
+        const [isSubmitting, setIsSubmitting] = useState(false);
+        const [isLoadingFeed, setIsLoadingFeed] = useState(true);
+
+        // Data state
+        const [feedbacks, setFeedbacks] = useState([]);
+
+        // --- Data Fetching ---
+
+        // 1. Fetch all feedbacks when the component first loads
+        useEffect(() => {
+          const fetchFeedbacks = async () => {
+            try {
+              const res = await fetch("/.netlify/functions/get-feedback");
+              if (!res.ok) {
+                throw new Error("Could not fetch feedback");
+              }
+              const data = await res.json();
+              setFeedbacks(data);
+            } catch (err) {
+              console.error(err);
+              setStatus({ message: err.message, type: "error" });
+            } finally {
+              setIsLoadingFeed(false);
+            }
+          };
+
+          fetchFeedbacks();
+        }, []); // Empty array means this runs only once on mount
+
+        // 2. Handle the form submission
+        const submitFeedback = async (e) => {
+          e.preventDefault(); // Prevent default form submission
           if (!name || !message) {
-            setStatus("Please fill in all fields.");
+            setStatus({ message: "Please fill in all fields.", type: "error" });
             return;
           }
 
-          // 1. Use the correct, relative path (starts with /.)
-          const url = "/.netlify/functions/feedback";
+          setIsSubmitting(true);
+          setStatus("");
 
           try {
-            // 2. Use 'POST' to send data, not 'GET'
-            const res = await fetch(url, {
+            const res = await fetch("/.netlify/functions/feedback", {
               method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              // 3. Send data as a JSON string in the body
+              headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ name, message }),
             });
 
             const data = await res.json();
 
             if (res.ok) {
-              setStatus(data.message || "Feedback sent! Thank you.");
+              setStatus({
+                message: "Feedback sent! Thank you.",
+                type: "success",
+              });
+
+              // ** THE MAGIC **
+              // Add the new feedback to the top of the list instantly!
+              setFeedbacks([data.newFeedback, ...feedbacks]);
+
+              // Reset the form
               setName("");
               setMessage("");
             } else {
-              setStatus(data.error || "Error sending feedback.");
+              setStatus({
+                message: data.error || "Error sending feedback.",
+                type: "error",
+              });
             }
           } catch (err) {
             console.error(err);
-            setStatus("Error sending feedback.");
+            setStatus({ message: "Error sending feedback.", type: "error" });
+          } finally {
+            setIsSubmitting(false);
           }
         };
 
+        // --- Helper Components ---
+
+        const FeedbackItem = ({ item }) => {
+          const { name, message, createdAt } = item;
+          return (
+            <li className="feedback-item">
+              <strong>{name}</strong>
+              <p>{message}</p>
+              <div className="feedback-item-meta">
+                {new Date(createdAt).toLocaleString()}
+              </div>
+            </li>
+          );
+        };
+
+        const FeedbackList = () => {
+          if (isLoadingFeed) {
+            return <div className="loading-spinner"></div>;
+          }
+
+          if (feedbacks.length === 0) {
+            return (
+              <p className="text-center">No feedback yet. Be the first!</p>
+            );
+          }
+
+          return (
+            <ul className="feedback-list">
+              {feedbacks.map((item) => (
+                <FeedbackItem key={item._id || item.createdAt} item={item} />
+              ))}
+            </ul>
+          );
+        };
+
+        // --- Main Render ---
         return (
-          <div style={{ padding: "20px", maxWidth: "400px", margin: "auto" }}>
-            <h2>Feedback Form</h2>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Your Name"
-              style={{ width: "100%", marginBottom: "10px" }}
-            />
-            <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Your Feedback"
-              style={{ width: "100%", marginBottom: "10px" }}
-            ></textarea>
-            <button onClick={submitFeedback}>Submit</button>
-            <p>{status}</p>
+          <div className="showcase-container">
+            {/* --- PANEL 1: SUBMISSION CARD --- */}
+            <div className="card">
+              <h2>Send Your Feedback</h2>
+              <form onSubmit={submitFeedback}>
+                <div className="form-group">
+                  <label htmlFor="name">Your Name</label>
+                  <input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g., Jane Doe"
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="message">Your Feedback</label>
+                  <textarea
+                    id="message"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Your feedback is valuable!"
+                    disabled={isSubmitting}
+                  ></textarea>
+                </div>
+                <button
+                  type="submit"
+                  className="submit-btn"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Sending..." : "Submit Feedback"}
+                </button>
+
+                {status && (
+                  <p
+                    className={`status-message ${
+                      status.type === "error"
+                        ? "status-error"
+                        : "status-success"
+                    }`}
+                  >
+                    {status.message}
+                  </p>
+                )}
+              </form>
+            </div>
+
+            {/* --- PANEL 2: LIVE FEED CARD --- */}
+            <div className="card">
+              <h2>Live Feedback Feed</h2>
+              <FeedbackList />
+            </div>
+
+            {/* --- FOOTER --- */}
+            <footer className="text-center" style={{ color: "#888" }}>
+              <p>
+                Built with React, Netlify Functions & MongoDB.
+                <br />A demo by [Your Name] for LinkedIn.
+              </p>
+            </footer>
           </div>
         );
       }
